@@ -1,0 +1,9 @@
+fn prints() {
+    let mut name: &str = "Tomas";
+
+    println!("Hello, {}!", name);
+
+    name = "Max";
+
+    println!("Hello, {}!", name);
+}
