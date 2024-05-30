@@ -2,10 +2,12 @@ use std::collections::HashMap;
 use std::io::{self, Write};
 
 // Calculadora
-fn calculator() {
+fn calculator(dict: &mut HashMap<String, i32>) {
 
     loop {
-        println!("calc>");
+        print!("calc>");
+        io::stdout().flush().unwrap();
+
         let mut input = String::new();
         io::stdin().read_line(&mut input).expect("Error al leer la entrada");
 
@@ -19,16 +21,25 @@ fn calculator() {
             
         }
 
-        let num1: f64 = match tokens[0].parse() {
+        let num1 = match tokens[0].parse::<f64>() {
             Ok(n) => n,
-            Err(_) => {
+            Err(_) => match dict.get(tokens[0]) {
+                Some(&val) => val as f64,
+                None => {
+                println!("{} no encontrado en el diccionario.", tokens[0]);
                 continue;
+                }
             }
         };
-        let num2: f64 = match tokens[2].parse() {
+
+        let num2 = match tokens[2].parse::<f64>() {
             Ok(n) => n,
-            Err(_) => {
+            Err(_) => match dict.get(tokens[2]) {
+                Some(&val) => val as f64,
+                None => {
+                println!("{} no encontrado en el diccionario.", tokens[0]);
                 continue;
+                }
             }
         };
 
@@ -40,7 +51,7 @@ fn calculator() {
                 if num2 != 0.0 {
                     println!("{}", num1 / num2);
                 } else {
-                    println!("");
+                    println!("No se puede dividir algo para cero, torpe.");
                 }
             }
             _ => println!("Operación inválida. Intente de nuevo."),
@@ -49,84 +60,86 @@ fn calculator() {
 }
 
 // Diccionario
-fn dictionary() {
-    let mut dictionary: HashMap<String, i32> = HashMap::new(); // Creamos un diccionario vacío para almacenar los datos.
+fn dictionary(dict: &mut HashMap<String, i32>) {
 
     loop {
         print!("process>");
+        io::stdout().flush().unwrap();
 
         let mut input = String::new();
-        io::stdin().read_line(&mut input).expect("Error al leer la entrada"); //El usuario nos introduce el texto.
+        io::stdin().read_line(&mut input).expect("Error al leer la entrada");
 
-        let tokens: Vec<&str> = input.trim().split_whitespace().collect(); //Separamos las claves de los valores.
+        let tokens: Vec<&str> = input.trim().split_whitespace().collect();
 
         match tokens[0] {
             "set" => {
                 if tokens.len() != 3 {
-                    println!("Comando inválido"); // Si el comando set no tiene el formato adecuado, mostramos un mensaje de error.
+                    println!("Comando inválido. Use: set <clave> <valor>");
+                    continue;
                 }
                 let key = tokens[1].to_string();
-                let value: i32 = tokens[2].parse().expect("Valor inválido");
-                dictionary.insert(key, value); // Insertamos la clave y el valor en el diccionario.
+                let value: i32 = match tokens[2].parse() {
+                    Ok(v) => v,
+                    Err(_) => {
+                        println!("Valor inválido.");
+                        continue;
+                    }
+                };
+                dict.insert(key, value);
             }
             "get" => {
                 if tokens.len() != 2 {
-                    println!("Error."); // En caso de que usemos mal get, nos saltará un error.
-            
+                    println!("Comando inválido. Use: get <clave>");
+                    continue;
                 }
                 let key = tokens[1].to_string();
-                match dictionary.get(&key) {
-                    Some(&value) => println!("{}.", value), //Si la clave existe, sabremos su valor.
-                    None => println!("{}: not found.", key), //Si la clave no existe, nos dirá que no ha sido encontrada.
+                match dict.get(&key) {
+                    Some(&value) => println!("{}", value),
+                    None => println!("{}: no encontrado.", key),
                 }
             }
             "list" => {
-                if dictionary.is_empty() {
-                    println!(""); // En caso de que el diccionario esté vacío, no devolvemos nada.
-                } else {
-                    for (key, value) in &dictionary {
-                        println!("{} = {}.", key, value); //Buscamos valores en el diccionario.
-                    }
+                for (key, value) in dict.iter() {
+                    println!("{} = {}", key, value);
                 }
             }
             "help" => {
-            println!("            set> Le damos un valor a una clave. Por ejemplo, set hola 5. A partir de ahora hola será igual a 5.
-            get> Le damos una clave y el programa nos devolverá el valor. Por ejemplo, get hola, el programa nos devolverá 5.
-            list> El programa nos devuelve todas las claves con sus respectivos valores almacenados en el diccionario.
-            bye> Nos salimos del programa.");
+                println!("Comandos :");
+                println!("set <clave> <valor> - Establece el valor de una clave.");
+                println!("get <clave> - Obtiene el valor de una clave.");
+                println!("list - Muestra todas las claves y sus valores.");
+                println!("bye - Salir del procesador de texto.");
             }
-            
             "bye" => break,
-            _ => {
-                let key = tokens[0].to_string();
-                match dictionary.get(&key) {
-                    Some(&value) => println!("{} = {}.", key, value), // Hace lo mismo que el get, solo que sin esta opción, no he encontrado manera de obtener el resultado de abajo.
-                    None => println!("{}: not found.", key), // En caso de no tener la palabra guardadam nos dirá "not found".
-                }
-            }
+            _ => println!("Comando no reconocido. Use 'help' para ver los comandos disponibles."),
         }
     }
 }
 
 fn main() {
+    let mut shared_dict: HashMap<String, i32> = HashMap::new();
+
     loop {
-        print!("mysys>");
+        print!("sys>");
+        io::stdout().flush().unwrap();
+
         let mut choice = String::new();
-        io::stdin().read_line(&mut choice).expect("Error.");
+        io::stdin().read_line(&mut choice).expect("Error al leer la entrada");
 
         match choice.trim() {
-            "calc" => calculator(),
-            "process" => dictionary(),
+            "calc" => calculator(&mut shared_dict),
+            "process" => dictionary(&mut shared_dict),
             "help" => {
-                println!(" calc> Entrar a la calculadora.
-       process> Entrar al procesador de texto.
-       bye> Salir del programa.");
+                println!("Comandos disponibles:");
+                println!("calc - Entrar a la calculadora.");
+                println!("process - Entrar al procesador de texto.");
+                println!("bye - Salir del programa.");
             }
             "bye" => {
                 println!("Nos vemos.");
                 break;
             }
-            _ => println!("Error."),
+            _ => println!("Comando no reconocido. Use 'help' para ver los comandos disponibles."),
         }
     }
 }
